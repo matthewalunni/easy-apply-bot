@@ -33,3 +33,5 @@ Make sure that the config file follows proper json syntax.
 ```
 
 A sqlite3 database will save the job title, company, location, workplace type, and the url of the LinkedIn posting that you have applied to.
+
+`python3 easy-apply.py` in the project directory should run the bot.
