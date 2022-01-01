@@ -1,0 +1,16 @@
+{
+    "username": "username",
+    "password": "password",
+    "job_titles": [
+        "Software Engineer",
+        "Full Stack Developer",
+        "Django Developer",
+        "Python Developer",
+        "IoT Developer",
+        "React Native Developer",
+        "React Developer"
+    ],
+    "locations": [
+        "Remote"
+    ]
+}

@@ -192,15 +192,18 @@ if __name__ == "__main__":
     for job in job_titles:
         for location in locations:
             search_url = search(driver, job, location)
-            for i in range(1, pages + 1, 1):
-                # get job listings
-                listings = get_job_listings(driver)
-                listings = [x for x in listings if x.easy_apply]
+            try:
+                for i in range(1, pages + 1, 1):
+                    # get job listings
+                    listings = get_job_listings(driver)
+                    listings = [x for x in listings if x.easy_apply]
 
-                # add listings to sqlite database
-                for listing in listings:
-                    apply(listing, driver, db, connection)
+                    # add listings to sqlite database
+                    for listing in listings:
+                        apply(listing, driver, db, connection)
 
-                next_page(driver, i, search_url)
+                    next_page(driver, i, search_url)
+            except Exception as e:
+                print(e)
 
         break
