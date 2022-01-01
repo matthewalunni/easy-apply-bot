@@ -8,13 +8,7 @@ import json
 import sqlite3
 
 
-def create_connection(db_file):
-    try:
-        conn = sqlite3.connect(db_file)
-        return conn
-    except Exception as e:
-        print(e)
-    return None
+
 
 class JobListing:
     def __init__(self, title, company, location, link, easy_apply, remote):
@@ -62,6 +56,14 @@ def launch_driver(url):
     driver.get(url)
     return driver
 
+def create_connection(db_file):
+    try:
+        conn = sqlite3.connect(db_file)
+        return conn
+    except Exception as e:
+        print(e)
+    return None
+
 def login(driver, username, password):
     driver.find_element(By.ID, "session_key").send_keys(
         username)  # fill username
@@ -70,7 +72,6 @@ def login(driver, username, password):
     driver.find_element(
         By.XPATH, '//*[@id="main-content"]/section[1]/div/div/form/button').click()  # sign in
     driver.get("https://www.linkedin.com/jobs/")  # go to jobs page
-
 
 def search(driver, job, location):
     driver.set_window_size(1080, 920)
@@ -124,28 +125,22 @@ def get_job_listings(driver):
     return listings
 
 def apply(listing, driver, db, connection):
-    # redirect to job page
     driver.get("https://www.linkedin.com" + listing.link)
     time.sleep(2)
-    # resize window to full size
     driver.set_window_size(1080, 920)
-
     try:
         driver.find_element(By.CLASS_NAME, "jobs-apply-button").click()
     except NoSuchElementException:
-        # return to previous page
         driver.back()
         return
 
-    # forever loop to keep clicking next button through forms
     while True:
         try:
             driver.find_element(
                 By.XPATH, "//button[@aria-label='Continue to next step']").click()
         except:
             break
-    # time.sleep(2)
-    # driver.find_element(By.CSS_SELECTOR, "[aria-label=Submit application]").click()
+    
     try:
         driver.find_element(
             By.XPATH, "//button[@aria-label='Review your application']").click()
@@ -194,16 +189,13 @@ if __name__ == "__main__":
             search_url = search(driver, job, location)
             try:
                 for i in range(1, pages + 1, 1):
-                    # get job listings
                     listings = get_job_listings(driver)
                     listings = [x for x in listings if x.easy_apply]
 
-                    # add listings to sqlite database
                     for listing in listings:
                         apply(listing, driver, db, connection)
 
                     next_page(driver, i, search_url)
             except Exception as e:
                 print(e)
-
         break
