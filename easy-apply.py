@@ -75,6 +75,11 @@ def login(driver, username, password):
 
 def search(driver, job, location):
     driver.set_window_size(1080, 920)
+    driver.get("https://www.linkedin.com/jobs")
+    driver.find_element(
+        By.XPATH, '//*[contains(@id, "jobs-search-box-keyword-id")]').clear() # clear job title
+    driver.find_element(
+        By.XPATH, '//*[contains(@id, "jobs-search-box-location-id")]').clear() # clear location
     driver.find_element(
         By.XPATH, '//*[contains(@id, "jobs-search-box-keyword-id")]').send_keys(job)  # fill job title
     driver.find_element(
@@ -125,21 +130,19 @@ def get_job_listings(driver):
     return listings
 
 def apply(listing, driver, db, connection):
-    driver.get("https://www.linkedin.com" + listing.link)
-    time.sleep(2)
-    driver.set_window_size(1080, 920)
-    try:
-        driver.find_element(By.CLASS_NAME, "jobs-apply-button").click()
-    except NoSuchElementException:
-        driver.back()
-        return
+    apply_to_listing(driver, listing)    
 
+    # next button loop
+    count = 0
     while True:
-        try:
-            driver.find_element(
-                By.XPATH, "//button[@aria-label='Continue to next step']").click()
-        except:
-            break
+        if (count > 10): break
+        else:
+            try:
+                driver.find_element(
+                    By.XPATH, "//button[@aria-label='Continue to next step']").click()
+                count += 1
+            except:
+                break
     
     try:
         driver.find_element(
@@ -159,6 +162,28 @@ def apply(listing, driver, db, connection):
     except Exception as e:
         print(e)
 
+def apply_to_listing(driver, listing):
+    driver.get("https://www.linkedin.com" + listing.link)
+    time.sleep(2)
+    driver.set_window_size(1080, 920)
+    description = get_description(driver, listing)
+    listing.set_description(description)
+    try:
+        driver.find_element(By.CLASS_NAME, "jobs-apply-button").click()
+    except NoSuchElementException:
+        driver.back()
+        return
+
+def get_description(driver, listing):
+    driver.set_window_size(1080, 920)
+    soup = BeautifulSoup(driver.page_source, "html.parser")
+    # scroll down one page
+    driver.execute_script("window.scrollTo(0, 1080);")
+    see_more = driver.find_element(By.XPATH, "//button[@aria-label='Click to see more description']")
+    driver.execute_script("arguments[0].click();", see_more)
+    description = soup.find(
+        "div", {"id": "job-details"}).text.strip()
+    return description
 
 def next_page(driver, i, search_url):
     driver.set_window_size(360, 640)
@@ -186,16 +211,19 @@ if __name__ == "__main__":
 
     for job in job_titles:
         for location in locations:
+            time.sleep(2)
             search_url = search(driver, job, location)
             try:
                 for i in range(1, pages + 1, 1):
                     listings = get_job_listings(driver)
                     listings = [x for x in listings if x.easy_apply]
-
+                    time.sleep(5)
                     for listing in listings:
+                        time.sleep(5)
                         apply(listing, driver, db, connection)
 
                     next_page(driver, i, search_url)
+                    time.sleep(5)
             except Exception as e:
                 print(e)
-        break
+        
