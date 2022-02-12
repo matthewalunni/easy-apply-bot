@@ -169,7 +169,9 @@ def apply_to_listing(driver, listing):
     description = get_description(driver, listing)
     listing.set_description(description)
     try:
-        driver.find_element(By.CLASS_NAME, "jobs-apply-button").click()
+        time.sleep(2)
+        myButton = myDriver.find_element(By.XPATH, '//button[contains(@class, "jobs-apply-button")]/span[1]')
+        myDriver.execute_script("arguments[0].click();", myButton)
     except NoSuchElementException:
         driver.back()
         return
@@ -209,8 +211,8 @@ if __name__ == "__main__":
 
     login(driver, username, password)
 
-    for job in job_titles:
-        for location in locations:
+    for job in job_titles.split():
+        for location in locations.split():
             time.sleep(2)
             search_url = search(driver, job, location)
             try:
