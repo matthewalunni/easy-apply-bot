@@ -4,3 +4,6 @@
 /venv
 config.json
 /config.json
+*.csv
+*.env
+*.json
