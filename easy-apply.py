@@ -3,6 +3,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.chrome.service import Service
 from bs4 import BeautifulSoup
 from openai_utils import ask
 import time
@@ -55,7 +56,9 @@ def process_config():
 
 
 def launch_driver(url):
-    driver = webdriver.Chrome(ChromeDriverManager().install())
+    service = Service()
+    options = webdriver.ChromeOptions()
+    driver = webdriver.Chrome(service=service, options=options)
     driver.get(url)
     return driver
 
@@ -70,13 +73,17 @@ def create_connection(db_file):
 
 
 def login(driver, username, password):
-    driver.find_element(By.ID, "session_key").send_keys(
-        username)  # fill username
-    driver.find_element(By.ID, "session_password").send_keys(
-        password)  # fill password
+    email_field = 'session_key'
+    password_field = 'session_password'
+    sign_in_button = '//*[@id="main-content"]/section[1]/div/div/form/div[2]/button'
+
+    driver.find_element(By.ID, email_field).send_keys(
+        username)
+    driver.find_element(By.ID, password_field).send_keys(
+        password)
     driver.find_element(
-        By.XPATH, '//*[@id="main-content"]/section[1]/div/div/form/button').click()  # sign in
-    driver.get("https://www.linkedin.com/jobs/")  # go to jobs page
+        By.XPATH, sign_in_button).click()
+    driver.get("https://www.linkedin.com/jobs/")
 
 
 def search(driver, job, location):
@@ -131,7 +138,7 @@ def get_job_listings(driver):
         title = listing.find(
             "a", {"class": "job-card-list__title"}).text.strip()
         company = listing.find(
-            class_="job-card-container__company-name").text.strip()
+            class_="job-card-container__primary-description").text.strip()
         location = listing.find(
             "li", {"class": "job-card-container__metadata-item"}).text.strip()
         link = listing.find(
@@ -143,9 +150,7 @@ def get_job_listings(driver):
         except:
             easy_apply = False
         try:
-            _remote = listing.find(
-                class_="job-card-container__metadata-item--workplace-type").text.strip()
-            remote = "Remote" if ("Remote" in _remote) else "Not Remote"
+            remote = "Remote" if ("Remote" in location) else "Not Remote"
         except:
             remote = "Not Remote"
         listings.append(JobListing(
@@ -164,22 +169,15 @@ def apply(listing: JobListing, driver, db, connection):
             count += 1
             if (count > 10):
                 break
-            if listing.company.strip() == "Paystone":
-                break
+
             else:
                 try:
                     driver.find_element(
                         By.XPATH, "//button[@aria-label='Continue to next step']").click()
+                    driver.find_element(
+                        By.XPATH, "//button[@aria-label='Continue to next step']").click()
                 except:
                     break
-
-                # try choosing resume
-                try:
-                    driver.find_element(
-                        By.XPATH, "//button[@aria-label='Choose Resume']").click()
-                    time.sleep(1)
-                except:
-                    pass
 
                 # # get form fields
                 form = driver.find_element(
@@ -196,15 +194,9 @@ def apply(listing: JobListing, driver, db, connection):
                             input.clear()
                             input.send_keys("5")
                             continue
-                        # if 'city' in label.text.lower():
-                        #     input.clear()
-                        #     input.send_keys("Toronto")
-                        #     continue
                         elif input.get_attribute("type") == "radio":
                             input.click()
                             continue
-                        # response = ask(label.text, listing.description, 1)
-                        # input.send_keys(response)
                         continue
                     except:
                         pass
@@ -308,6 +300,7 @@ if __name__ == "__main__":
     db.execute("CREATE TABLE IF NOT EXISTS listings (id INTEGER PRIMARY KEY, title TEXT, company TEXT, location TEXT, link TEXT, description TEXT, easy_apply TEXT, remote TEXT)")
     connection.commit()
     pages = 40
+    time.sleep(10)
 
     login(driver, username, password)
 
